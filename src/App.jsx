@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import './App.css'
 import {
   categories,
@@ -17,6 +17,7 @@ const studentPortal = {
   subEvent: 'subEvent',
   register: 'register',
   confirmation: 'confirmation',
+  bookings: 'bookings',
 }
 
 const organiserPortal = {
@@ -39,6 +40,8 @@ const mockStudent = {
 const organiserCollege = colleges.find((college) => college.id === 'srm') ?? colleges[0]
 
 function App() {
+  const carouselRef = useRef(null)
+  const carouselDrag = useRef({ active: false, startX: 0, scrollLeft: 0 })
   const [authView, setAuthView] = useState('roleSelect')
   const [portal, setPortal] = useState(null)
   const [events, setEvents] = useState(mainEvents)
@@ -52,6 +55,9 @@ function App() {
   const [selectedCollegeId, setSelectedCollegeId] = useState('srm')
   const [selectedMainEventId, setSelectedMainEventId] = useState('technova-2026')
   const [selectedSubEventId, setSelectedSubEventId] = useState('bugthon-2026')
+  const [discoverQuery, setDiscoverQuery] = useState('')
+  const [discoverFilter, setDiscoverFilter] = useState('All')
+  const [showDiscoverFilters, setShowDiscoverFilters] = useState(false)
   const [newEvent, setNewEvent] = useState({
     name: '',
     description: '',
@@ -95,7 +101,14 @@ function App() {
   const organiserEvents = events.filter((event) => event.collegeId === organiserCollege.id)
   const organiserSubEvents = subEventRecords.filter((event) => organiserEvents.some((mainEvent) => mainEvent.id === event.mainEventId))
   const organiserRegistrations = registrationRecords.filter((registration) => organiserSubEvents.some((event) => event.id === registration.eventId))
+  const myBookings = registrationRecords.filter((registration) => registration.name === registrationForm.name)
   const mainEventSubEvents = subEventRecords.filter((event) => event.mainEventId === selectedMainEventId)
+  const discoverEvents = events.filter((event) => {
+    const query = discoverQuery.trim().toLowerCase()
+    const matchesQuery = !query || `${event.name} ${event.collegeName} ${event.venue}`.toLowerCase().includes(query)
+    const matchesFilter = discoverFilter === 'All' || event.collegeId === selectedCollegeId
+    return matchesQuery && matchesFilter
+  })
 
   const goStudentScreen = (nextScreen) => {
     setPortal('student')
@@ -107,6 +120,39 @@ function App() {
     setPortal('organiser')
     setScreen(nextScreen)
     setRouter((prev) => ({ ...prev, organiser: nextScreen }))
+  }
+
+  const handleStudentNav = (tab) => {
+    if (tab === 'feed') goStudentScreen(studentPortal.home)
+    if (tab === 'discover') goStudentScreen(studentPortal.discover)
+    if (tab === 'bookings') goStudentScreen(studentPortal.bookings)
+  }
+
+  const startCarouselDrag = (event) => {
+    if (!carouselRef.current) return
+    carouselDrag.current = {
+      active: true,
+      startX: event.clientX,
+      scrollLeft: carouselRef.current.scrollLeft,
+    }
+    carouselRef.current.classList.add('is-dragging')
+  }
+
+  const moveCarouselDrag = (event) => {
+    if (!carouselDrag.current.active || !carouselRef.current) return
+    const distance = event.clientX - carouselDrag.current.startX
+    carouselRef.current.scrollLeft = carouselDrag.current.scrollLeft - distance
+  }
+
+  const stopCarouselDrag = () => {
+    carouselDrag.current.active = false
+    carouselRef.current?.classList.remove('is-dragging')
+  }
+
+  const scrollCarouselWithWheel = (event) => {
+    if (!carouselRef.current || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return
+    event.preventDefault()
+    carouselRef.current.scrollLeft += event.deltaY
   }
 
   const loginAsStudent = () => {
@@ -291,7 +337,15 @@ function App() {
           <h3>Featured Events</h3>
           <button className="link-btn" onClick={() => goStudentScreen(studentPortal.discover)}>See all</button>
         </div>
-        <div className="carousel">
+        <div
+          ref={carouselRef}
+          className="carousel"
+          onWheel={scrollCarouselWithWheel}
+          onMouseDown={startCarouselDrag}
+          onMouseMove={moveCarouselDrag}
+          onMouseUp={stopCarouselDrag}
+          onMouseLeave={stopCarouselDrag}
+        >
           {events.map((event) => (
             <button
               key={event.id}
@@ -309,42 +363,66 @@ function App() {
             </button>
           ))}
         </div>
+        <div className="carousel-footer">
+          <div className="carousel-dots" aria-label="Featured event slides">
+            {events.map((event, index) => (
+              <span key={event.id} className={`carousel-dot ${index === 0 ? 'active' : ''}`} />
+            ))}
+          </div>
+          <span className="carousel-hint">Swipe to explore</span>
+        </div>
       </section>
 
-      <BottomNav active="feed" onChange={(tab) => {
-        if (tab === 'discover') goStudentScreen(studentPortal.discover)
-        if (tab === 'feed') goStudentScreen(studentPortal.home)
-      }} />
+      <BottomNav active="feed" onChange={handleStudentNav} />
     </div>
   )
 
   const renderDiscover = () => (
     <div className="screen app-shell">
-      <header className="topbar">
+      <header className="discover-header">
+        <button className="back-btn" onClick={() => goStudentScreen(studentPortal.home)}>←</button>
         <div>
-          <p className="eyebrow">Discover</p>
-          <h2>Explore events around you</h2>
+          <p className="eyebrow">Chennai</p>
+          <h2>Discover</h2>
         </div>
+        <button className="icon-btn" onClick={() => setShowDiscoverFilters((current) => !current)} aria-label="Open filters">☷</button>
       </header>
 
-      <div className="search-box">Search for events, artists, venues...</div>
+      <div className="discover-search">
+        <span>⌕</span>
+        <input value={discoverQuery} onChange={(event) => setDiscoverQuery(event.target.value)} placeholder="Search events, colleges..." />
+        {discoverQuery && <button onClick={() => setDiscoverQuery('')} aria-label="Clear search">×</button>}
+      </div>
 
-      <div className="filter-row">
-        <button className="filter-btn active">Date</button>
-        <button className="filter-btn">Location</button>
-        <button className="filter-btn">Category</button>
+      {showDiscoverFilters && (
+        <aside className="filter-drawer">
+          <div>
+            <strong>Filter events</strong>
+            <small>Refine your browse</small>
+          </div>
+          <div className="filter-drawer-actions">
+            <button className={discoverFilter === 'All' ? 'active' : ''} onClick={() => setDiscoverFilter('All')}>All events</button>
+            <button className={discoverFilter === 'College' ? 'active' : ''} onClick={() => setDiscoverFilter('College')}>My college</button>
+          </div>
+        </aside>
+      )}
+
+      <div className="browse-strip">
+        <span>Popular near you</span>
+        <button className="filter-btn active" onClick={() => setShowDiscoverFilters((current) => !current)}>Filters</button>
       </div>
 
       <section className="section-block">
-        <div className="heading-row">
-          <h3>Categories</h3>
-        </div>
-        <div className="tags-wrap">
-          {categories.map((category) => (
+        <div className="category-rail">
+          {['All', ...categories.slice(0, 5)].map((category) => (
             <button
               key={category}
-              className={`tag ${selectedCategory === category ? 'active' : ''}`}
+              className={`tag ${((category === 'All' && discoverFilter === 'All') || selectedCategory === category) ? 'active' : ''}`}
               onClick={() => {
+                if (category === 'All') {
+                  setDiscoverFilter('All')
+                  return
+                }
                 setSelectedCategory(category)
                 goStudentScreen(studentPortal.categories)
               }}
@@ -357,28 +435,48 @@ function App() {
 
       <section className="section-block">
         <div className="heading-row">
-          <h3>Browse by College</h3>
+          <h3>{discoverQuery ? 'Search results' : 'Featured events'}</h3>
+          <button className="link-btn" onClick={() => setDiscoverQuery('')}>See all</button>
         </div>
-        <div className="mini-list">
-          {colleges.map((college) => (
+        <div className="discover-event-rail">
+          {discoverEvents.map((event) => (
             <button
-              key={college.id}
-              className="college-item"
+              key={event.id}
+              className="discover-event-card"
               onClick={() => {
-                setSelectedCollegeId(college.id)
-                goStudentScreen(studentPortal.college)
+                setSelectedMainEventId(event.id)
+                goStudentScreen(studentPortal.mainEvent)
               }}
             >
-              <strong>{college.name}</strong>
-              <span>{college.city}</span>
+              <img src={event.banner} alt={event.name} />
+              <div>
+                <strong>{event.name}</strong>
+                <small>{event.startDate} · {event.collegeName}</small>
+              </div>
             </button>
           ))}
         </div>
       </section>
 
-      <BottomNav active="discover" onChange={(tab) => {
-        if (tab === 'feed') goStudentScreen(studentPortal.home)
-      }} />
+      <section className="section-block college-strip-section">
+        <div className="heading-row">
+          <h3>Browse colleges</h3>
+          <span>{colleges.length} places</span>
+        </div>
+        <div className="college-rail">
+          {colleges.slice(0, 4).map((college) => (
+            <button key={college.id} className="college-pill" onClick={() => {
+              setSelectedCollegeId(college.id)
+              goStudentScreen(studentPortal.college)
+            }}>
+              <span>{college.name.charAt(0)}</span>
+              <strong>{college.name}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -412,7 +510,7 @@ function App() {
         ))}
       </div>
 
-      <BottomNav active="discover" onChange={(tab) => tab === 'feed' && goStudentScreen(studentPortal.home)} />
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -446,7 +544,7 @@ function App() {
         ))}
       </div>
 
-      <BottomNav active="discover" onChange={(tab) => tab === 'feed' && goStudentScreen(studentPortal.home)} />
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -506,7 +604,7 @@ function App() {
         </div>
       </div>
 
-      <BottomNav active="discover" onChange={(tab) => tab === 'feed' && goStudentScreen(studentPortal.home)} />
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -555,7 +653,7 @@ function App() {
         <button className="primary-btn" onClick={() => goStudentScreen(studentPortal.register)}>Book Tickets</button>
       </div>
 
-      <BottomNav active="discover" onChange={(tab) => tab === 'feed' && goStudentScreen(studentPortal.home)} />
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -613,7 +711,7 @@ function App() {
         Continue to Payment
       </button>
 
-      <BottomNav active="discover" onChange={(tab) => tab === 'feed' && goStudentScreen(studentPortal.home)} />
+      <BottomNav active="discover" onChange={handleStudentNav} />
     </div>
   )
 
@@ -651,6 +749,60 @@ function App() {
           <button className="primary-btn" onClick={() => goStudentScreen(studentPortal.discover)}>Explore</button>
         </div>
       </div>
+    </div>
+  )
+
+  const renderBookings = () => (
+    <div className="screen app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Student</p>
+          <h2>My bookings</h2>
+        </div>
+        <div className="header-actions">
+          <button className="logout-btn" onClick={logout}>Logout</button>
+          <button className="avatar-btn">MI</button>
+        </div>
+      </header>
+
+      <div className="booking-list">
+        {myBookings.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">◇</div>
+            <h3>No bookings yet</h3>
+            <p>Book a campus event and it will appear here.</p>
+            <button className="primary-btn" onClick={() => goStudentScreen(studentPortal.discover)}>Explore events</button>
+          </div>
+        ) : (
+          myBookings.map((booking) => {
+            const event = subEventRecords.find((subEvent) => subEvent.id === booking.eventId)
+            const mainEvent = events.find((main) => main.id === event?.mainEventId)
+
+            return (
+              <article className="booking-card" key={booking.id}>
+                <div className="booking-card-top">
+                  <div>
+                    <p className="eyebrow">{mainEvent?.name ?? 'EventHub booking'}</p>
+                    <h3>{event?.title ?? 'Event booking'}</h3>
+                  </div>
+                  <span className={`booking-status ${booking.status === 'Checked In' ? 'checked-in' : ''}`}>{booking.status}</span>
+                </div>
+                <div className="booking-meta">
+                  <span>{event?.date ?? booking.date}</span>
+                  <span>{event?.venue ?? 'Venue to be announced'}</span>
+                </div>
+                <div className="booking-student">
+                  <span>{booking.name}</span>
+                  <span>{booking.college} · {booking.department} · {booking.year}</span>
+                </div>
+                <small>{booking.id}</small>
+              </article>
+            )
+          })
+        )}
+      </div>
+
+      <BottomNav active="bookings" onChange={handleStudentNav} />
     </div>
   )
 
@@ -968,6 +1120,8 @@ function App() {
             return renderRegister()
           case studentPortal.confirmation:
             return renderConfirmation()
+          case studentPortal.bookings:
+            return renderBookings()
           default:
             return renderStudentHome()
         }
@@ -1012,6 +1166,7 @@ function BottomNav({ active, organiser = false, onChange }) {
     : [
         { id: 'feed', label: 'Home' },
         { id: 'discover', label: 'Discover' },
+        { id: 'bookings', label: 'Bookings' },
       ]
 
   return (
