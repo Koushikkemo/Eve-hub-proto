@@ -1113,6 +1113,56 @@ h1, h2, h3,
 .form-card textarea::placeholder,
 .auth-form input::placeholder { color: #9aa4b2; }
 
+.upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+  border: 1px dashed #d5dbe4;
+  border-radius: 14px;
+  background: #fafbfc;
+}
+
+.upload-field > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.upload-field small {
+  font-size: 11px;
+}
+
+.upload-button {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid #f2a6b5;
+  border-radius: 10px;
+  background: #fff0f3;
+  color: #d7345a;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.upload-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.upload-preview {
+  width: 100%;
+  height: 130px;
+  display: block;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
 .registration-heading {
   display: flex;
   flex-direction: column;
@@ -1183,6 +1233,111 @@ h1, h2, h3,
   position: absolute;
   right: 10px;
   bottom: 10px;
+}
+
+.organiser-shell {
+  gap: 20px;
+}
+
+.organiser-shell .topbar {
+  align-items: flex-start;
+}
+
+.workspace-name {
+  display: block;
+  max-width: 230px;
+  margin-top: 7px;
+  overflow: hidden;
+  color: #687386;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organiser-stats {
+  gap: 8px;
+}
+
+.organiser-stats .stat-box {
+  padding: 13px 8px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.organiser-stats .stat-box strong {
+  font-size: 22px;
+}
+
+.organiser-stats .stat-box span {
+  font-size: 10px;
+}
+
+.organiser-upcoming {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.organiser-upcoming .heading-row {
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.organiser-upcoming .heading-row h3 {
+  font-size: 19px;
+}
+
+.organiser-upcoming .event-item {
+  grid-template-columns: 96px 1fr;
+  min-height: 122px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.08);
+}
+
+.organiser-upcoming .event-item img {
+  min-height: 122px;
+}
+
+.organiser-upcoming .event-item-copy {
+  justify-content: center;
+  padding: 11px 12px 11px 0;
+  gap: 6px;
+}
+
+.organiser-upcoming .event-item-copy .chip-tag {
+  max-width: 150px;
+  overflow: hidden;
+  padding: 5px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organiser-upcoming .event-source {
+  max-width: 170px;
+  overflow: hidden;
+  color: #687386;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organiser-upcoming .event-item-copy strong {
+  font-size: 16px;
+}
+
+.organiser-upcoming .event-item-copy small {
+  line-height: 1.35;
+}
+
+.organiser-create-bar {
+  margin-top: 2px;
+}
+
+.organiser-create-bar .primary-btn {
+  min-height: 48px;
+  box-shadow: 0 9px 18px rgba(255, 77, 120, 0.18);
 }
 
 .booking-list {

@@ -64,6 +64,7 @@ function App() {
     startDate: '',
     endDate: '',
     venue: '',
+    banner: '',
   })
   const [newSubEvent, setNewSubEvent] = useState({
     title: '',
@@ -73,6 +74,7 @@ function App() {
     venue: '',
     category: 'Technical',
     tags: '',
+    banner: '',
   })
   const [registrationForm, setRegistrationForm] = useState({
     name: mockStudent.name,
@@ -177,6 +179,13 @@ function App() {
     setNewEvent((current) => ({ ...current, [field]: value }))
   }
 
+  const updateBanner = (field, file) => {
+    if (!file) return
+    const previewUrl = URL.createObjectURL(file)
+    if (field === 'event') updateNewEvent('banner', previewUrl)
+    if (field === 'subEvent') updateNewSubEvent('banner', previewUrl)
+  }
+
   const updateNewSubEvent = (field, value) => {
     setNewSubEvent((current) => ({ ...current, [field]: value }))
   }
@@ -195,11 +204,11 @@ function App() {
       startDate: newEvent.startDate || 'Date to be announced',
       endDate: newEvent.endDate || newEvent.startDate || 'Date to be announced',
       venue: newEvent.venue.trim() || `${organiserCollege.name} Campus`,
-      banner: mainEvents[0].banner,
+      banner: newEvent.banner || mainEvents[0].banner,
     }
     setEvents((current) => [...current, event])
     setSelectedMainEventId(event.id)
-    setNewEvent({ name: '', description: '', startDate: '', endDate: '', venue: '' })
+    setNewEvent({ name: '', description: '', startDate: '', endDate: '', venue: '', banner: '' })
     goOrganiserScreen(organiserPortal.eventDetails)
   }
 
@@ -223,13 +232,13 @@ function App() {
       time: newSubEvent.time || 'Time to be announced',
       venue: newSubEvent.venue.trim() || selectedMainEvent?.venue || 'Venue to be announced',
       description: newSubEvent.description.trim() || 'A new event activity listed by the organising college.',
-      banner: mainEvents[0].banner,
+      banner: newSubEvent.banner || mainEvents[0].banner,
       seats: 100,
       fee: 'Free',
     }
     setSubEventRecords((current) => [...current, subEvent])
     setSelectedSubEventId(subEvent.id)
-    setNewSubEvent({ title: '', description: '', date: '', time: '', venue: '', category: 'Technical', tags: '' })
+    setNewSubEvent({ title: '', description: '', date: '', time: '', venue: '', category: 'Technical', tags: '', banner: '' })
     goOrganiserScreen(organiserPortal.eventDetails)
   }
 
@@ -807,11 +816,12 @@ function App() {
   )
 
   const renderOrganiserHome = () => (
-    <div className="screen app-shell">
+    <div className="screen app-shell organiser-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">{organiserCollege.name}</p>
-          <h2>College events</h2>
+          <p className="eyebrow">Organiser console</p>
+          <h2>Good morning</h2>
+          <span className="workspace-name">{organiserCollege.name}</span>
         </div>
         <div className="header-actions">
           <button className="logout-btn" onClick={logout}>Logout</button>
@@ -819,7 +829,7 @@ function App() {
         </div>
       </header>
 
-      <div className="stats-row">
+      <div className="stats-row organiser-stats">
         <div className="stat-box">
           <strong>{organiserEvents.length}</strong>
           <span>Main Events</span>
@@ -834,9 +844,12 @@ function App() {
         </div>
       </div>
 
-      <div className="section-block">
+      <div className="section-block organiser-upcoming">
         <div className="heading-row">
-          <h3>Upcoming</h3>
+          <div>
+            <p className="eyebrow">Your listings</p>
+            <h3>Upcoming events</h3>
+          </div>
           <button className="link-btn" onClick={() => goOrganiserScreen(organiserPortal.myEvents)}>View</button>
         </div>
         <div className="list-stack">
@@ -853,7 +866,7 @@ function App() {
             >
               <img src={event.banner} alt={event.name} />
               <div className="event-item-copy">
-                <span className="chip-tag light">{event.collegeName}</span>
+                <span className="event-source">{event.collegeName}</span>
                 <strong>{event.name}</strong>
                 <small>{event.startDate} • {event.venue}</small>
               </div>
@@ -866,8 +879,8 @@ function App() {
         </div>
       </div>
 
-      <div className="cta-float">
-        <button className="primary-btn" onClick={() => goOrganiserScreen(organiserPortal.createEvent)}>Create event</button>
+      <div className="organiser-create-bar">
+        <button className="primary-btn full" onClick={() => goOrganiserScreen(organiserPortal.createEvent)}>+ Create main event</button>
       </div>
 
       <BottomNav organiser active="dashboard" onChange={(tab) => {
@@ -895,6 +908,17 @@ function App() {
         <label>Start Date<input value={newEvent.startDate} onChange={(event) => updateNewEvent('startDate', event.target.value)} placeholder="10 Mar 2026" /></label>
         <label>End Date<input value={newEvent.endDate} onChange={(event) => updateNewEvent('endDate', event.target.value)} placeholder="12 Mar 2026" /></label>
         <label>Venue<input value={newEvent.venue} onChange={(event) => updateNewEvent('venue', event.target.value)} placeholder={`${organiserCollege.name} Campus`} /></label>
+        <div className="upload-field">
+          <div>
+            <span className="field-caption">Event banner</span>
+            <small>Use a landscape image for the best card preview.</small>
+          </div>
+          <label className="upload-button">
+            <input type="file" accept="image/*" onChange={(event) => updateBanner('event', event.target.files?.[0])} />
+            {newEvent.banner ? 'Change banner' : 'Upload banner'}
+          </label>
+          {newEvent.banner && <img className="upload-preview" src={newEvent.banner} alt="Event banner preview" />}
+        </div>
         <button className="primary-btn full" onClick={createEvent}>Create Event</button>
       </div>
 
@@ -1034,6 +1058,17 @@ function App() {
         <label>Date<input value={newSubEvent.date} onChange={(event) => updateNewSubEvent('date', event.target.value)} placeholder="11 Mar 2026" /></label>
         <label>Time<input value={newSubEvent.time} onChange={(event) => updateNewSubEvent('time', event.target.value)} placeholder="09:30 AM" /></label>
         <label>Venue<input value={newSubEvent.venue} onChange={(event) => updateNewSubEvent('venue', event.target.value)} placeholder="Innovation Hall A" /></label>
+        <div className="upload-field">
+          <div>
+            <span className="field-caption">Sub-event banner</span>
+            <small>Use a landscape image for the event card.</small>
+          </div>
+          <label className="upload-button">
+            <input type="file" accept="image/*" onChange={(event) => updateBanner('subEvent', event.target.files?.[0])} />
+            {newSubEvent.banner ? 'Change banner' : 'Upload banner'}
+          </label>
+          {newSubEvent.banner && <img className="upload-preview" src={newSubEvent.banner} alt="Sub-event banner preview" />}
+        </div>
         <div className="category-picker">
           <span className="field-caption">Category</span>
           <div className="category-options">
