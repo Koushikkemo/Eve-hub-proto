@@ -755,7 +755,7 @@ function App() {
         </div>
         <div className="confirm-actions">
           <button className="secondary-btn" onClick={() => goStudentScreen(studentPortal.home)}>Home</button>
-          <button className="primary-btn" onClick={() => goStudentScreen(studentPortal.discover)}>Explore</button>
+          <button className="primary-btn" onClick={() => goStudentScreen(studentPortal.bookings)}>My bookings</button>
         </div>
       </div>
     </div>
@@ -804,7 +804,14 @@ function App() {
                   <span>{booking.name}</span>
                   <span>{booking.college} · {booking.department} · {booking.year}</span>
                 </div>
-                <small>{booking.id}</small>
+                <div className="booking-ticket">
+                  <div className="booking-qr"><div className="qr-code" /></div>
+                  <div>
+                    <span className="booking-ticket-label">Entry QR</span>
+                    <strong>{booking.id}</strong>
+                    <small>Show this at check-in</small>
+                  </div>
+                </div>
               </article>
             )
           })
